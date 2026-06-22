@@ -172,13 +172,49 @@
       .nbg{gap:2px;}
       .nb{padding:4px 6px;min-width:26px;font-size:10.5px;}
     }
+
+    /* MODAL CLÉ API */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:none;align-items:center;justify-content:center;padding:1rem;}
+    .modal-overlay.on{display:flex;}
+    .modal{background:#fff;border-radius:16px;padding:2rem;max-width:480px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.18);}
+    .modal-icon{font-size:28px;margin-bottom:12px;}
+    .modal-title{font-size:18px;font-weight:700;margin-bottom:6px;}
+    .modal-desc{font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:20px;}
+    .modal-desc a{color:#185fa5;text-decoration:none;}
+    .modal-hint{font-size:11.5px;color:var(--hint);margin-bottom:20px;}
+    .modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+    .key-saved{font-size:12px;color:#639922;display:none;align-items:center;gap:4px;margin-top:6px;}
+    .key-saved.on{display:flex;}
   </style>
 </head>
 <body>
 
 <div class="bar">
   <div><div class="bar-t">RCAD · BTS NDRC</div><div class="bar-s">Générateur de commentaires de bulletin</div></div>
-  <div class="bar-r"><button class="bs" style="font-size:12px;padding:6px 12px;" onclick="resetSess()">↺ Nouvelle session</button></div>
+  <div class="bar-r" style="display:flex;gap:8px;">
+    <button class="bs" id="key-btn" style="font-size:12px;padding:6px 12px;" onclick="showKeyModal()">🔑 Clé API</button>
+    <button class="bs" style="font-size:12px;padding:6px 12px;" onclick="resetSess()">↺ Nouvelle session</button>
+  </div>
+</div>
+
+<!-- MODAL CLÉ API -->
+<div class="modal-overlay" id="key-modal" onclick="if(event.target===this&&hasKey())closeKeyModal()">
+  <div class="modal">
+    <div class="modal-icon">🔑</div>
+    <div class="modal-title">Clé API Anthropic</div>
+    <div class="modal-desc">
+      Entrez votre clé API Anthropic pour activer la génération de commentaires.<br><br>
+      Elle est sauvegardée <strong>uniquement dans ce navigateur</strong>, sur ce poste, et n'est jamais envoyée ailleurs que vers api.anthropic.com.
+    </div>
+    <div style="font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--hint);margin-bottom:6px;">Votre clé API</div>
+    <input class="fi" id="key-input" type="password" placeholder="sk-ant-api03-..." autocomplete="off" style="margin-bottom:8px;" onkeydown="if(event.key==='Enter')saveKey()"/>
+    <div class="modal-hint">Commence par sk-ant- · Stockée uniquement dans ce navigateur</div>
+    <div class="key-saved" id="key-saved">✓ Clé enregistrée</div>
+    <div class="modal-actions">
+      <button class="bs" id="modal-cancel" onclick="closeKeyModal()" style="display:none;">Annuler</button>
+      <button class="bp" onclick="saveKey()">Enregistrer</button>
+    </div>
+  </div>
 </div>
 
 <div class="stepper">
@@ -618,13 +654,27 @@ CONSIGNES :
 Génère UNIQUEMENT ce JSON valide, sans markdown, sans backtick :
 {"court":"[bulletin vouvoiement]","long":{"intro":"[1-2 phrases d'introduction tutoiement, bilan global du semestre]","forts":["[point fort 1 précis]","[point fort 2 précis]"],"attention":["[point d'attention 1 précis avec contexte]","[point d'attention 2 précis]"],"axes":["[axe de progression 1 : conseil concret et actionnable]","[axe de progression 2 : conseil concret]"],"conclusion":"[1-2 phrases d'encouragement motivant tutoiement]"}}`;
 
+  const apiKey = localStorage.getItem("rcad_api_key") || "";
+  if (!apiKey) { showKeyModal(); return; }
+
   document.getElementById("gbtn").disabled=true;
   document.getElementById("loader").classList.add("on");
   try{
     const r=await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",headers:{"Content-Type":"application/json"},
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "x-api-key": apiKey,
+        "anthropic-version":"2023-06-01",
+        "anthropic-dangerous-direct-browser-calls":"true"
+      },
       body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1500,messages:[{role:"user",content:prompt}]})
     });
+    if(!r.ok){
+      const err=await r.json().catch(()=>({}));
+      if(r.status===401){ localStorage.removeItem("rcad_api_key"); alert("Clé API invalide. Veuillez la vérifier."); showKeyModal(); return; }
+      throw new Error(err.error?.message||`HTTP ${r.status}`);
+    }
     const d=await r.json();
     const raw=d.content?.map(b=>b.text||"").join("")||"";
     const p=JSON.parse(raw.replace(/```json|```/g,"").trim());
@@ -684,6 +734,36 @@ function cpyCmt(){
   });
 }
 function regen(){goTo(3);setTimeout(gen,80);}
+
+/* ══════════════ CLÉ API ══════════════ */
+function hasKey(){ return !!localStorage.getItem("rcad_api_key"); }
+function showKeyModal(){
+  document.getElementById("key-modal").classList.add("on");
+  document.getElementById("modal-cancel").style.display = hasKey() ? "" : "none";
+  document.getElementById("key-saved").classList.remove("on");
+  const k = localStorage.getItem("rcad_api_key") || "";
+  document.getElementById("key-input").value = k ? "••••••••" + k.slice(-4) : "";
+  setTimeout(()=>document.getElementById("key-input").focus(), 100);
+}
+function closeKeyModal(){ document.getElementById("key-modal").classList.remove("on"); }
+function saveKey(){
+  const val = document.getElementById("key-input").value.trim();
+  if(!val || val.startsWith("••")){ closeKeyModal(); return; }
+  if(!val.startsWith("sk-")){ alert('La clé doit commencer par "sk-"'); return; }
+  localStorage.setItem("rcad_api_key", val);
+  document.getElementById("key-saved").classList.add("on");
+  const btn = document.getElementById("key-btn");
+  btn.style.color="#639922"; btn.style.borderColor="#639922";
+  setTimeout(closeKeyModal, 700);
+}
+window.addEventListener("load", ()=>{
+  if(!hasKey()) showKeyModal();
+  else {
+    const btn = document.getElementById("key-btn");
+    btn.style.color="#639922"; btn.style.borderColor="#639922";
+    btn.title="Clé API configurée ✓";
+  }
+});
 
 /* ══════════════ PDF VECTORISÉ (jsPDF — chargement différé) ══════════════ */
 function loadjsPDF(){
