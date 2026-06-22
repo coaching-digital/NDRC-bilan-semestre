@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Commentaires Bulletin — RCAD · BTS NDRC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{
+      --bg:#f4f2ee;--surface:#fff;--border:#dedad2;--border-soft:#eae7e0;
+      --text:#181715;--muted:#6b6860;--hint:#a09e99;--accent:#181715;
+      --r:10px;--rl:14px;--sh:0 1px 4px rgba(0,0,0,.06),0 6px 16px rgba(0,0,0,.04);
+      --cTI:#378ADD;--cTIb:#B5D4F4;--cI:#639922;--cIb:#C0DD97;
+      --cS:#EF9F27;--cSb:#FAC775;--cTS:#D85A30;--cTSb:#F5C4B3;
+      --cNA:#94929A;--cNAb:#E0DFE4;
+    }
+    body{background:var(--bg);font-family:'Inter','Segoe UI',system-ui,sans-serif;color:var(--text);min-height:100vh;padding-bottom:4rem;}
+
+    /* APP BAR */
+    .bar{background:var(--surface);border-bottom:1px solid var(--border);padding:.85rem 1.5rem;display:flex;align-items:center;position:sticky;top:0;z-index:10;}
+    .bar-t{font-size:13.5px;font-weight:600;}
+    .bar-s{font-size:12px;color:var(--muted);}
+    .bar-r{margin-left:auto;}
+
+    /* STEPPER */
+    .stepper{background:var(--surface);border-bottom:1px solid var(--border);padding:.7rem 1.5rem;display:flex;align-items:center;}
+    .si{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--hint);flex-shrink:0;}
+    .si.on{color:var(--text);}
+    .si.done{color:var(--muted);}
+    .sn{width:22px;height:22px;border-radius:50%;background:var(--border-soft);color:var(--hint);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .si.on .sn{background:var(--accent);color:#fff;}
+    .si.done .sn{background:#639922;color:#fff;}
+    .sl{font-weight:500;}
+    .ss{flex:1;height:1px;background:var(--border);margin:0 10px;min-width:16px;max-width:60px;}
+
+    /* PAGE */
+    .pw{display:none;max-width:900px;margin:0 auto;padding:2rem 1rem 3rem;}
+    .pw.on{display:block;}
+    .pgt{font-size:21px;font-weight:600;margin-bottom:5px;}
+    .pgd{font-size:13.5px;color:var(--muted);margin-bottom:1.5rem;line-height:1.6;}
+
+    /* CARD */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);box-shadow:var(--sh);overflow:hidden;margin-bottom:1.25rem;}
+    .ch{padding:.9rem 1.5rem;background:#f9f8f5;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+    .cn{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .ct{font-size:14px;font-weight:600;}
+    .cs{font-size:12px;color:var(--muted);margin-top:2px;}
+
+    /* SESSION BANNER */
+    .sbann{background:#eef3ff;border:1px solid #c5d5f5;border-radius:var(--r);padding:.75rem 1.25rem;margin-bottom:1.25rem;display:flex;gap:10px;font-size:12.5px;}
+    .sbann-b{color:var(--muted);line-height:1.55;}
+    .sbann-b strong{color:var(--text);}
+
+    /* FIELDS */
+    .idg{padding:1.25rem 1.5rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem 1.5rem;}
+    .fl{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--hint);margin-bottom:7px;}
+    .fi{width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:14px;font-family:inherit;color:var(--text);background:#faf9f7;outline:none;transition:border-color .15s,background .15s;}
+    .fi:focus{border-color:#888;background:#fff;}
+    .mw{display:flex;align-items:center;gap:8px;}
+    .mw .fi{width:80px;text-align:center;font-size:20px;font-weight:700;}
+    .md{font-size:14px;color:var(--muted);}
+
+    /* TOGGLE */
+    .tgg{display:flex;gap:6px;flex-wrap:wrap;}
+    .tg{border:1px solid var(--border);background:#faf9f7;border-radius:8px;padding:7px 11px;font-size:12.5px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .14s;font-family:inherit;}
+    .tg:hover{border-color:#bbb;color:var(--text);}
+    .tg.on{background:#181715;border-color:#181715;color:#fff;}
+
+    /* SESSION COMP CHECKBOXES */
+    .gh{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--hint);padding:9px 20px 6px;background:#fcfbf9;border-top:1px solid var(--border-soft);}
+    .gh:first-child{border-top:none;}
+    .cr{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--border-soft);cursor:pointer;transition:background .1s;}
+    .cr:last-child{border-bottom:none;}
+    .cr:hover{background:#faf9f7;}
+    .cr input[type=checkbox]{width:17px;height:17px;accent-color:#181715;cursor:pointer;flex-shrink:0;}
+    .cl{font-size:13.5px;cursor:pointer;line-height:1.4;}
+
+    /* COMPETENCY BLOCK IN STEP 3 */
+    .comp-block{border-bottom:1px solid var(--border);}
+    .comp-block:last-child{border-bottom:none;}
+    .comp-title{font-size:12.5px;font-weight:600;color:var(--text);padding:10px 20px 8px;background:#f5f4f0;border-bottom:1px solid var(--border-soft);letter-spacing:0;}
+
+    /* NOTION ROW */
+    .nr{display:flex;align-items:center;gap:10px;padding:9px 20px 9px 28px;border-bottom:1px solid var(--border-soft);transition:background .1s;}
+    .nr:last-child{border-bottom:none;}
+    .nr:hover{background:#faf9f7;}
+    .nl{font-size:13px;flex:1;line-height:1.4;color:var(--text);}
+    .nbg{display:flex;gap:3px;flex-shrink:0;}
+    .nb{border:1px solid var(--border);background:#faf9f7;border-radius:7px;padding:4px 8px;font-size:11px;font-weight:600;color:var(--hint);cursor:pointer;transition:all .12s;font-family:inherit;min-width:30px;text-align:center;}
+    .nb:hover{border-color:#bbb;color:var(--muted);}
+    .nb.na-on{background:var(--cNA);border-color:#6b6878;color:#fff;box-shadow:0 0 0 2px var(--cNAb);}
+    .nb.s-TI{background:var(--cTI);border-color:#185FA5;color:#fff;box-shadow:0 0 0 2px var(--cTIb);}
+    .nb.s-I {background:var(--cI); border-color:#3B6D11;color:#fff;box-shadow:0 0 0 2px var(--cIb);}
+    .nb.s-S {background:var(--cS); border-color:#854F0B;color:#412402;box-shadow:0 0 0 2px var(--cSb);}
+    .nb.s-TS{background:var(--cTS);border-color:#993C1D;color:#fff;box-shadow:0 0 0 2px var(--cTSb);}
+
+    /* TABLES */
+    table{width:100%;border-collapse:collapse;}
+    thead th{font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--hint);padding:11px 8px;text-align:center;background:#f9f8f5;border-bottom:1px solid var(--border);}
+    thead th:first-child{text-align:left;padding-left:20px;}
+    tbody tr{border-bottom:1px solid var(--border-soft);}
+    tbody tr:last-child{border-bottom:none;}
+    tbody td{padding:9px 6px;vertical-align:middle;}
+    tbody td:first-child{padding-left:20px;font-size:13.5px;}
+    tbody td:last-child{padding-right:14px;}
+    .tbtn{display:block;width:100%;padding:7px 2px;border:1px solid var(--border);background:#faf9f7;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--hint);cursor:pointer;text-align:center;transition:all .13s;font-family:inherit;}
+    .tbtn:hover{border-color:#bbb;color:var(--muted);}
+    .tbtn.s-TI{background:var(--cTI);border-color:#185FA5;color:#fff;padding:9px 2px;box-shadow:0 0 0 3px var(--cTIb);}
+    .tbtn.s-I {background:var(--cI); border-color:#3B6D11;color:#fff;padding:9px 2px;box-shadow:0 0 0 3px var(--cIb);}
+    .tbtn.s-S {background:var(--cS); border-color:#854F0B;color:#412402;padding:9px 2px;box-shadow:0 0 0 3px var(--cSb);}
+    .tbtn.s-TS{background:var(--cTS);border-color:#993C1D;color:#fff;padding:9px 2px;box-shadow:0 0 0 3px var(--cTSb);}
+
+    /* LEGEND */
+    .leg{display:flex;gap:12px;flex-wrap:wrap;padding:.75rem 1.5rem;background:#f9f8f5;border-top:1px solid var(--border);}
+    .legi{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted);}
+    .legdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+    /* BUTTONS */
+    .bp{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#181715;color:#fff;border:none;border-radius:var(--r);padding:11px 22px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:opacity .15s;}
+    .bp:hover:not(:disabled){opacity:.82;}
+    .bp:disabled{opacity:.35;cursor:not-allowed;}
+    .bs{display:inline-flex;align-items:center;gap:6px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:var(--r);padding:11px 16px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer;transition:background .13s;}
+    .bs:hover{background:var(--border-soft);}
+    .bsm{font-size:12.5px;color:var(--muted);background:#f4f2ee;border:1px solid var(--border);border-radius:8px;padding:6px 14px;cursor:pointer;font-family:inherit;transition:background .13s;}
+    .bsm:hover{background:var(--border-soft);}
+    .brow{display:flex;align-items:center;gap:10px;justify-content:flex-end;margin-top:1.25rem;flex-wrap:wrap;}
+    .brow.sb{justify-content:space-between;}
+
+    /* LOADER */
+    .loader{display:none;align-items:center;gap:12px;font-size:13.5px;color:var(--muted);padding:1.5rem;}
+    .loader.on{display:flex;}
+    .spin{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin .7s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* COMMENT */
+    .tabs{display:flex;border-bottom:1px solid var(--border);background:#f9f8f5;}
+    .tab{padding:11px 20px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:none;font-family:inherit;border-bottom:2px solid transparent;transition:all .13s;}
+    .tab.on{color:var(--text);border-bottom-color:var(--accent);}
+    .cb{padding:1.5rem;}
+    .ct2{font-size:14px;line-height:1.85;white-space:pre-wrap;min-height:80px;}
+    .ca{display:flex;gap:8px;margin-top:1rem;justify-content:flex-end;}
+
+    /* PRINT */
+    #psheet{display:none;}
+    @media print{
+      @page{margin:1.8cm 2cm;size:A4;}
+      body{background:#fff;padding:0;}
+      .bar,.stepper,.pw{display:none !important;}
+      #psheet{display:block !important;}
+    }
+    @media(max-width:600px){
+      .bar,.stepper{padding:.65rem 1rem;}
+      .sl{display:none;}
+      .idg{grid-template-columns:1fr 1fr;}
+      .nbg{gap:2px;}
+      .nb{padding:4px 6px;min-width:26px;font-size:10.5px;}
+    }
+  </style>
+</head>
+<body>
+
+<div class="bar">
+  <div><div class="bar-t">RCAD · BTS NDRC</div><div class="bar-s">Générateur de commentaires de bulletin</div></div>
+  <div class="bar-r"><button class="bs" style="font-size:12px;padding:6px 12px;" onclick="resetSess()">↺ Nouvelle session</button></div>
+</div>
+
+<div class="stepper">
+  <div class="si on" id="si1"><div class="sn" id="sn1">1</div><span class="sl">Paramètres de session</span></div>
+  <div class="ss"></div>
+  <div class="si" id="si2"><div class="sn" id="sn2">2</div><span class="sl">Apprenant·e</span></div>
+  <div class="ss"></div>
+  <div class="si" id="si3"><div class="sn" id="sn3">3</div><span class="sl">Évaluation</span></div>
+  <div class="ss"></div>
+  <div class="si" id="si4"><div class="sn" id="sn4">4</div><span class="sl">Commentaire</span></div>
+</div>
+
+<!-- PAGE 1 : SESSION -->
+<div class="pw on" id="p1">
+  <div class="pgt">Paramètres de la session</div>
+  <div class="pgd">Ces réglages s'appliquent à <strong>toute la classe</strong> et resteront verrouillés. Cliquez sur "Nouvelle session" pour tout recommencer.</div>
+
+  <div class="card">
+    <div class="ch"><div class="cn">📅</div><div><div class="ct">Promotion et période</div></div></div>
+    <div style="padding:1.25rem 1.5rem;display:flex;gap:2.5rem;flex-wrap:wrap;">
+      <div>
+        <div class="fl">Année BTS</div>
+        <div class="tgg" id="ag"><button class="tg" onclick="pTg('a',this,'1ère')">1ère année</button><button class="tg" onclick="pTg('a',this,'2ème')">2ème année</button></div>
+      </div>
+      <div>
+        <div class="fl">Semestre</div>
+        <div class="tgg" id="sg"><button class="tg" onclick="pTg('s',this,'S1')">S1</button><button class="tg" onclick="pTg('s',this,'S2')">S2</button><button class="tg" onclick="pTg('s',this,'S3')">S3</button><button class="tg" onclick="pTg('s',this,'S4')">S4</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch">
+      <div class="cn">✓</div>
+      <div><div class="ct">Compétences abordées ce semestre</div><div class="cs">Cochez ce qui a été traité en cours — les notions détaillées seront évaluées dans la grille</div></div>
+    </div>
+    <div id="s1-comp"></div>
+    <div style="padding:.9rem 1.5rem;background:#f9f8f5;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <span id="s1-count" style="font-size:12.5px;color:var(--muted);">Aucune compétence sélectionnée</span>
+      <button class="bsm" onclick="toggleAll()">Tout cocher / décocher</button>
+    </div>
+  </div>
+
+  <div class="brow" style="margin-top:1.5rem;">
+    <button class="bp" style="padding:12px 28px;" onclick="valSess()">Valider pour toute la classe →</button>
+  </div>
+</div>
+
+<!-- PAGE 2 : APPRENANT -->
+<div class="pw" id="p2">
+  <div id="sb2" class="sbann"></div>
+  <div class="pgt">Informations de l'apprenant·e</div>
+  <div class="pgd">Renseignez l'identité et la moyenne semestrielle.</div>
+  <div class="card">
+    <div class="idg">
+      <div><div class="fl">Nom</div><input class="fi" id="f-nom" type="text" placeholder="DUPONT" autocomplete="off"/></div>
+      <div><div class="fl">Prénom</div><input class="fi" id="f-prenom" type="text" placeholder="Marie" autocomplete="off"/></div>
+      <div><div class="fl">Moyenne RCAD</div><div class="mw"><input class="fi" id="f-moy" type="number" min="0" max="20" step="0.1" placeholder="—"/><span class="md">/ 20</span></div></div>
+    </div>
+  </div>
+  <div class="brow"><button class="bs" onclick="goTo(1)">← Retour</button><button class="bp" onclick="goEval()">Grille d'évaluation →</button></div>
+</div>
+
+<!-- PAGE 3 : ÉVALUATION -->
+<div class="pw" id="p3">
+  <div id="sb3" class="sbann"></div>
+  <div class="pgt">Grille d'évaluation — <span id="p3n" style="color:var(--muted);font-weight:400;"></span></div>
+  <div class="pgd">Pour chaque notion abordée, sélectionnez le niveau d'acquisition. Marquez <strong>NA</strong> si la notion n'a pas été évaluée pour cet·te apprenant·e.</div>
+
+  <div class="card">
+    <div class="ch"><div class="cn">1</div><div><div class="ct">Acquisition des compétences — Bloc 2 RCAD</div><div class="cs">Notions de cours évaluées par compétence</div></div></div>
+    <div id="ev-comp"></div>
+    <div class="leg">
+      <div class="legi"><div class="legdot" style="background:var(--cNA)"></div>NA — Non évalué (ne compte pas)</div>
+      <div class="legi"><div class="legdot" style="background:var(--cTI)"></div>TI — Très insatisfaisant</div>
+      <div class="legi"><div class="legdot" style="background:var(--cI)"></div>I — Insuffisant</div>
+      <div class="legi"><div class="legdot" style="background:var(--cS)"></div>S — Satisfaisant</div>
+      <div class="legi"><div class="legdot" style="background:var(--cTS)"></div>TS — Très satisfaisant</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><div class="cn">2</div><div><div class="ct">Posture professionnelle en formation</div><div class="cs">Soft skills et comportements observés</div></div></div>
+    <table>
+      <thead><tr>
+        <th>Critère</th>
+        <th>TI<br><span style="font-size:10px;font-weight:400;text-transform:none;">Très insatisfaisant</span></th>
+        <th>I<br><span style="font-size:10px;font-weight:400;text-transform:none;">Insatisfaisant</span></th>
+        <th>S<br><span style="font-size:10px;font-weight:400;text-transform:none;">Satisfaisant</span></th>
+        <th>TS<br><span style="font-size:10px;font-weight:400;text-transform:none;">Très satisfaisant</span></th>
+      </tr></thead>
+      <tbody id="pos-body"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="ch"><div class="cn">3</div><div><div class="ct">Méthodologie d'examen — Épreuve E5</div><div class="cs">Préparation et maîtrise des attendus</div></div></div>
+    <table>
+      <thead><tr><th>Critère</th><th>TI</th><th>I</th><th>S</th><th>TS</th></tr></thead>
+      <tbody id="met-body"></tbody>
+    </table>
+  </div>
+
+  <div class="loader" id="loader"><div class="spin"></div>Rédaction en cours par l'IA…</div>
+  <div class="brow">
+    <button class="bs" onclick="goTo(2)">← Retour</button>
+    <button class="bp" id="gbtn" onclick="gen()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21 12 17.77 5.82 21 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Générer le commentaire
+    </button>
+  </div>
+</div>
+
+<!-- PAGE 4 : COMMENTAIRE -->
+<div class="pw" id="p4">
+  <div id="sb4" class="sbann"></div>
+  <div class="pgt">Commentaire — <span id="p4n" style="color:var(--muted);font-weight:400;"></span></div>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab on" onclick="swTab('b',this)">📋 Bulletin (court)</button>
+      <button class="tab" onclick="swTab('l',this)">📄 Document étudiant (long)</button>
+    </div>
+    <div class="cb">
+      <div class="ct2" id="cdis"></div>
+      <div class="ca">
+        <button class="bsm" onclick="cpyCmt()">Copier le texte</button>
+        <button class="bsm" onclick="regen()">↺ Regénérer</button>
+      </div>
+    </div>
+  </div>
+  <div class="brow sb">
+    <button class="bs" onclick="goTo(3)">← Modifier l'évaluation</button>
+    <div style="display:flex;gap:10px;">
+      <button class="bs" onclick="expPDF()">↓ PDF étudiant</button>
+      <button class="bp" onclick="nextStu()">Apprenant·e suivant·e →</button>
+    </div>
+  </div>
+</div>
+
+<div id="psheet"></div>
+
+<script>
+/* ══════════════ DONNÉES ══════════════ */
+const COMPS = [
+  { g:"A — Gestion de la relation client à distance", items:[
+    { c:"Prospection et identification d'opportunités à distance", ns:[
+      "Techniques de prospection téléphonique (script, accroche, argumentation)",
+      "Qualification et gestion d'un fichier prospects/clients",
+      "Ciblage et segmentation de la clientèle à distance",
+      "Traitement des objections à distance",
+      "Indicateurs de performance de la prospection (taux de contact, taux de transformation)"
+    ]},
+    { c:"Conduite d'entretiens et vente à distance", ns:[
+      "Structure d'un entretien de vente à distance (SBAM, plan d'appel)",
+      "Techniques d'écoute active et de reformulation",
+      "Argumentation et proposition commerciale adaptée au canal",
+      "Closing et traitement des dernières objections",
+      "Suivi post-entretien, relance et fidélisation"
+    ]},
+    { c:"Traitement des demandes, réclamations et suivi", ns:[
+      "Procédures de traitement des réclamations et litiges",
+      "Communication empathique et gestion des émotions client",
+      "Outils de ticketing et de suivi des demandes (CRM, logiciels)",
+      "Indicateurs de satisfaction (NPS, CSAT, First Call Resolution)",
+      "Escalade interne et résolution des situations complexes"
+    ]},
+    { c:"Mise à jour et exploitation des données clients (CRM)", ns:[
+      "Fonctionnement et utilisation d'un CRM (interface, modules clés)",
+      "Collecte, saisie et mise à jour des données clients",
+      "RGPD : principes et obligations liés aux données personnelles",
+      "Segmentation et analyse du portefeuille clients",
+      "Marketing automation et actions commerciales ciblées"
+    ]},
+    { c:"Supervision et animation d'une équipe de téléacteurs", ns:[
+      "Rôle et missions du superviseur / team leader",
+      "Indicateurs de pilotage d'un plateau (DMT, taux de décrochage, qualité des appels)",
+      "Techniques de motivation et d'animation d'équipe",
+      "Double écoute, feedback et accompagnement individuel",
+      "Planification et gestion des flux d'appels"
+    ]}
+  ]},
+  { g:"B — Gestion de la e-relation client", items:[
+    { c:"Animation de communautés et réseaux sociaux", ns:[
+      "Caractéristiques et usages des principaux réseaux (Instagram, LinkedIn, Facebook, TikTok, X)",
+      "Stratégie de contenu et définition d'une ligne éditoriale",
+      "Planification et calendrier éditorial",
+      "Techniques d'animation et d'engagement d'une communauté",
+      "Indicateurs de performance RS (reach, taux d'engagement, abonnés, impressions)"
+    ]},
+    { c:"Création et publication de contenus web commerciaux", ns:[
+      "Principes du copywriting et de la rédaction web",
+      "Création de visuels et traitement d'images (Canva, outils de retouche)",
+      "Formats courts et vidéos (Reels, Stories, posts, carrousels)",
+      "Optimisation des publications (hashtags, tags, heures de publication)",
+      "Outils de planification et publication (Meta Business Suite, Buffer, Hootsuite…)"
+    ]},
+    { c:"Modération et exploitation des échanges en ligne", ns:[
+      "Règles et techniques de modération de commentaires",
+      "Gestion des crises en ligne et des bad buzz",
+      "Veille des mentions de la marque (Google Alerts, Mention, Talkwalker…)",
+      "Exploitation des données et insights des plateformes sociales",
+      "Rédaction de réponses professionnelles adaptées (ton, délai, format)"
+    ]},
+    { c:"Maintien de la visibilité digitale et de la e-réputation", ns:[
+      "Notion et enjeux de la e-réputation pour une entreprise",
+      "Gestion et réponse aux avis en ligne (Google Business, Trustpilot, TripAdvisor…)",
+      "Principes du référencement naturel SEO (mots-clés, balises, contenu)",
+      "Outils de veille et de monitoring de la réputation",
+      "Cohérence et gestion de l'image de marque sur le digital"
+    ]}
+  ]},
+  { g:"C — Gestion de la vente en e-commerce", items:[
+    { c:"E-merchandising et mise en valeur de l'offre en ligne", ns:[
+      "Principes du e-merchandising et de l'expérience utilisateur (UX)",
+      "Rédaction de fiches produits optimisées (titre, description, mots-clés)",
+      "Mise en ligne et optimisation des images produits",
+      "Arborescence, navigation et catégorisation du catalogue",
+      "Mise en avant des promotions, best-sellers et coups de cœur"
+    ]},
+    { c:"Mise en œuvre d'opérations commerciales en ligne", ns:[
+      "Types d'opérations commerciales (soldes, ventes flash, codes promo, bundles)",
+      "Campagnes d'emailing commercial (Brevo / Mailchimp) : création et envoi",
+      "Notions de référencement payant (Google Ads, Meta Ads) — concepts de base",
+      "Calendrier promotionnel et gestion de la saisonnalité",
+      "Analyse des résultats d'une campagne (taux d'ouverture, clics, taux de conversion)"
+    ]},
+    { c:"Utilisation et administration d'une plateforme e-commerce", ns:[
+      "Interface et navigation dans le back-office Prestashop",
+      "Gestion des produits, catégories et stocks sur Prestashop",
+      "Traitement et suivi des commandes clients",
+      "WordPress et WooCommerce : présentation et paramétrage de base",
+      "Indicateurs e-commerce (taux de conversion, panier moyen, CA en ligne)"
+    ]}
+  ]}
+];
+
+// Flatten competencies with global index
+const FC = [];
+COMPS.forEach(g => g.items.forEach(item => FC.push({...item, groupe:g.g, ci:FC.length})));
+
+const POSTURE = [
+  "Ponctualité","Présence et assiduité","Implication dans l'apprentissage",
+  "Qualité des échanges avec le formateur","Qualité des rendus",
+  "Prise en compte des remarques","Volonté de progresser"
+];
+const METHODO = [
+  "Connaissance de la structure de l'épreuve E5",
+  "Analyse et compréhension d'un cas pratique",
+  "Qualité et rigueur de la rédaction",
+  "Gestion du temps en situation d'examen",
+  "Maîtrise des outils numériques demandés (Prestashop, WordPress)",
+  "Capacité de synthèse et prise de recul",
+  "Appropriation des attendus du jury"
+];
+const MEN = ["TI","I","S","TS"];
+
+/* ══════════════ ÉTAT ══════════════ */
+const sess = {a:null, s:null, ids:new Set()};
+let stu = {nom:"", prenom:"", moy:"", notions:{}, pos:{}, met:{}};
+// notions key: "ci-ni" → null | "NA" | "TI"|"I"|"S"|"TS"
+let cmts = {b:"", l:""};
+let aTab = "b";
+
+/* ══════════════ NAV ══════════════ */
+function goTo(n){
+  document.querySelectorAll(".pw").forEach(p=>p.classList.remove("on"));
+  document.getElementById(`p${n}`).classList.add("on");
+  for(let i=1;i<=4;i++){
+    const si=document.getElementById(`si${i}`), sn=document.getElementById(`sn${i}`);
+    si.classList.remove("on","done"); sn.textContent=i;
+    if(i<n){si.classList.add("done");sn.textContent="✓";}
+    else if(i===n) si.classList.add("on");
+  }
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* ══════════════ PAGE 1 ══════════════ */
+function buildS1(){
+  const c=document.getElementById("s1-comp");
+  let lg=null;
+  FC.forEach(({c:comp,groupe,ci})=>{
+    if(groupe!==lg){
+      const h=document.createElement("div"); h.className="gh"; h.textContent=groupe; c.appendChild(h); lg=groupe;
+    }
+    const row=document.createElement("label"); row.className="cr";
+    row.innerHTML=`<input type="checkbox" id="sc-${ci}" value="${ci}"/><span class="cl">${comp}</span>`;
+    c.appendChild(row);
+    row.querySelector("input").addEventListener("change",updCnt);
+  });
+}
+function updCnt(){
+  const n=document.querySelectorAll("#s1-comp input:checked").length;
+  document.getElementById("s1-count").textContent=n===0?"Aucune compétence sélectionnée":n===1?"1 compétence sélectionnée":`${n} compétences sélectionnées`;
+}
+let allOn=false;
+function toggleAll(){
+  allOn=!allOn;
+  document.querySelectorAll("#s1-comp input[type=checkbox]").forEach(c=>c.checked=allOn);
+  updCnt();
+}
+function pTg(k,btn,v){
+  document.querySelectorAll(`#${k==="a"?"ag":"sg"} .tg`).forEach(b=>b.classList.remove("on"));
+  btn.classList.add("on"); if(k==="a") sess.a=v; else sess.s=v;
+}
+function valSess(){
+  sess.ids.clear();
+  document.querySelectorAll("#s1-comp input:checked").forEach(cb=>sess.ids.add(+cb.value));
+  if(sess.ids.size===0){alert("Sélectionnez au moins une compétence.");return;}
+  buildEvComp(); updBanners(); goTo(2);
+}
+function updBanners(){
+  const info=[sess.a?`BTS NDRC ${sess.a} année`:null,sess.s].filter(Boolean).join(" · ");
+  const names=FC.filter(f=>sess.ids.has(f.ci)).map(f=>`<em>${f.c}</em>`).join(", ");
+  const html=`<span style="font-size:16px;flex-shrink:0;">🔒</span>
+    <div class="sbann-b"><strong>Session verrouillée${info?" — "+info:""}</strong><br>
+    ${sess.ids.size} compétence${sess.ids.size>1?"s":""} abordée${sess.ids.size>1?"s":""} : ${names}</div>`;
+  [2,3,4].forEach(n=>document.getElementById(`sb${n}`).innerHTML=html);
+}
+
+/* ══════════════ PAGE 3 : ÉVAL COMP ══════════════ */
+function buildEvComp(){
+  const c=document.getElementById("ev-comp"); c.innerHTML="";
+  FC.forEach(({c:comp,ns,groupe,ci})=>{
+    if(!sess.ids.has(ci)) return;
+    const block=document.createElement("div"); block.className="comp-block";
+    const th=document.createElement("div"); th.className="comp-title"; th.textContent=comp; block.appendChild(th);
+    ns.forEach((n,ni)=>{
+      const row=document.createElement("div"); row.className="nr";
+      row.innerHTML=`<span class="nl">${n}</span>
+        <div class="nbg">
+          <button class="nb" id="nb-${ci}-${ni}-NA">NA</button>
+          ${MEN.map(m=>`<button class="nb" id="nb-${ci}-${ni}-${m}">${m}</button>`).join("")}
+        </div>`;
+      block.appendChild(row);
+      const key=`${ci}-${ni}`;
+      // NA button
+      document.getElementById(`nb-${ci}-${ni}-NA`).addEventListener("click",()=>pickN(ci,ni,"NA"));
+      MEN.forEach(m=>document.getElementById(`nb-${ci}-${ni}-${m}`).addEventListener("click",()=>pickN(ci,ni,m)));
+    });
+    c.appendChild(block);
+  });
+}
+function pickN(ci,ni,val){
+  const key=`${ci}-${ni}`;
+  stu.notions[key]=(stu.notions[key]===val)?null:val;
+  // reset all buttons for this notion
+  ["NA",...MEN].forEach(m=>{
+    const b=document.getElementById(`nb-${ci}-${ni}-${m}`);
+    if(!b) return;
+    if(m==="NA") b.className="nb"+(stu.notions[key]==="NA"?" na-on":"");
+    else b.className="nb"+(stu.notions[key]===m?` s-${m}`:"");
+  });
+}
+function buildTables(){
+  if(document.getElementById("pos-body").children.length>0) return;
+  buildTable(POSTURE,"pos-body","pos","pos");
+  buildTable(METHODO,"met-body","met","met");
+}
+function buildTable(list,bodyId,prefix,key){
+  const tb=document.getElementById(bodyId);
+  list.forEach((c,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${c}</td>`+MEN.map(m=>`<td style="padding:8px 5px;width:58px;"><button class="tbtn" id="${prefix}-${i}-${m}">${m}</button></td>`).join("");
+    tb.appendChild(tr);
+    MEN.forEach(m=>document.getElementById(`${prefix}-${i}-${m}`).addEventListener("click",()=>pickT(key,i,m)));
+  });
+}
+function pickT(key,i,m){
+  stu[key][i]=(stu[key][i]===m)?null:m;
+  MEN.forEach(mm=>document.getElementById(`${key==="pos"?"pos":"met"}-${i}-${mm}`).className="tbtn"+(stu[key][i]===mm?` s-${mm}`:""));
+}
+
+/* ══════════════ PAGE 2→3 ══════════════ */
+function goEval(){
+  stu.nom=document.getElementById("f-nom").value.trim();
+  stu.prenom=document.getElementById("f-prenom").value.trim();
+  stu.moy=document.getElementById("f-moy").value;
+  const name=[stu.prenom,stu.nom.toUpperCase()].filter(Boolean).join(" ")||"Apprenant·e";
+  document.getElementById("p3n").textContent=name;
+  document.getElementById("p4n").textContent=name;
+  // Reset state
+  stu.notions={}; stu.pos={}; stu.met={};
+  // Reset buttons
+  FC.forEach(({ns,ci})=>ns.forEach((_,ni)=>{
+    ["NA",...MEN].forEach(m=>{const b=document.getElementById(`nb-${ci}-${ni}-${m}`);if(b)b.className="nb";});
+  }));
+  POSTURE.forEach((_,i)=>MEN.forEach(m=>{const b=document.getElementById(`pos-${i}-${m}`);if(b)b.className="tbtn";}));
+  METHODO.forEach((_,i)=>MEN.forEach(m=>{const b=document.getElementById(`met-${i}-${m}`);if(b)b.className="tbtn";}));
+  cmts={b:"",l:""};
+  buildTables();
+  goTo(3);
+}
+
+/* ══════════════ GÉNÉRATION ══════════════ */
+async function gen(){
+  // Build notions summary
+  let notionLines=[];
+  FC.forEach(({c:comp,ns,ci})=>{
+    if(!sess.ids.has(ci)) return;
+    const notionList=[];
+    ns.forEach((n,ni)=>{
+      const v=stu.notions[`${ci}-${ni}`];
+      if(v && v!=="NA") notionList.push(`    • ${n} → ${v}`);
+    });
+    if(notionList.length){
+      notionLines.push(`  ▸ ${comp} :`);
+      notionLines.push(...notionList);
+    }
+  });
+  const posL=POSTURE.map((c,i)=>stu.pos[i]?`  • ${c} : ${stu.pos[i]}`:null).filter(Boolean);
+  const metL=METHODO.map((c,i)=>stu.met[i]?`  • ${c} : ${stu.met[i]}`:null).filter(Boolean);
+  const moyN=parseFloat(stu.moy);
+  const moyLvl=isNaN(moyN)?"non renseignée":`${stu.moy}/20 — niveau ${moyN<7?"insuffisant":moyN<10?"en difficulté":moyN<12?"fragile":moyN<14?"satisfaisant":moyN<16?"bien":"excellent"}`;
+
+  const prompt=`Tu es une formatrice BTS NDRC expérimentée et bienveillante. Tu rédiges des commentaires de bulletin pour la matière "Relation Client à Distance et Digitalisation" (RCAD — Bloc 2, épreuve E5).
+
+PROFIL :
+Apprenant·e : ${stu.prenom||""} ${stu.nom.toUpperCase()||""}
+Année : BTS NDRC ${sess.a?sess.a+" année":"non précisée"}
+Semestre : ${sess.s||"non précisé"}
+Moyenne semestrielle RCAD : ${moyLvl}
+
+NOTIONS ÉVALUÉES CE SEMESTRE (TI=Très insuffisant / I=Insuffisant / S=Satisfaisant / TS=Très satisfaisant) :
+${notionLines.join("\n")||"Aucune notion évaluée"}
+
+POSTURE PROFESSIONNELLE :
+${posL.join("\n")||"Non renseignée"}
+
+MÉTHODOLOGIE D'EXAMEN :
+${metL.join("\n")||"Non renseignée"}
+
+CONSIGNES IMPÉRATIVES :
+— Vouvoie l'apprenant·e dans LES DEUX textes (tu t'adresses directement à lui/elle)
+— N'utilise jamais la 3ème personne (pas de "il/elle a", pas de "Marie a fait")
+— Commence chaque texte en s'adressant à l'apprenant·e ("Vous avez...", "Ce semestre, vous...")
+
+Génère UNIQUEMENT un JSON valide, sans markdown, sans backtick :
+{
+  "court": "[3-4 phrases pour le bulletin : direct, professionnel, mentionne la moyenne, synthétise les points forts et un axe de progression. Vouvoiement, 2ème personne.]",
+  "long": "[10-14 lignes pour l'apprenant·e : bienveillant, détaille chaque groupe de compétences évaluées, donne des conseils actionnables précis, termine par un encouragement motivant. Vouvoiement, 2ème personne.]"
+}`;
+
+  document.getElementById("gbtn").disabled=true;
+  document.getElementById("loader").classList.add("on");
+  try{
+    const r=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:prompt}]})
+    });
+    const d=await r.json();
+    const raw=d.content?.map(b=>b.text||"").join("")||"";
+    const p=JSON.parse(raw.replace(/```json|```/g,"").trim());
+    cmts.b=p.court||""; cmts.l=p.long||"";
+    showCmt("b");
+    document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("on",i===0));
+    goTo(4);
+  }catch(e){alert("Erreur lors de la génération. Vérifiez votre connexion et réessayez.");}
+  finally{document.getElementById("gbtn").disabled=false;document.getElementById("loader").classList.remove("on");}
+}
+function showCmt(t){aTab=t;document.getElementById("cdis").textContent=t==="b"?cmts.b:cmts.l;}
+function swTab(t,btn){document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));btn.classList.add("on");showCmt(t);}
+function cpyCmt(){
+  navigator.clipboard.writeText(document.getElementById("cdis").textContent).then(()=>{
+    const b=event.target,p=b.textContent; b.textContent="✓ Copié!"; setTimeout(()=>b.textContent=p,1800);
+  });
+}
+function regen(){goTo(3);setTimeout(gen,80);}
+
+/* ══════════════ PDF ══════════════ */
+function badge(v){
+  const cols={TI:"#378ADD",I:"#639922",S:"#EF9F27",TS:"#D85A30",NA:"#94929A"};
+  const tc=v==="S"?"#412402":v==="NA"?"#fff":"#fff";
+  const lbl=v||"—"; const bg=cols[v]||"#e0ddd6"; const fc=v?tc:"#888";
+  return `<span style="background:${bg};color:${fc};padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;display:inline-block;">${lbl}</span>`;
+}
+function expPDF(){
+  const nom=(stu.nom||"NOM").toUpperCase(), prenom=stu.prenom||"Prenom";
+  // Build notion rows
+  let notionHtml="";
+  FC.forEach(({c:comp,ns,ci})=>{
+    if(!sess.ids.has(ci)) return;
+    let rows=ns.map((n,ni)=>{
+      const v=stu.notions[`${ci}-${ni}`];
+      const rowStyle=`padding:5px 10px;font-size:11.5px;border-bottom:1px solid #eae7e0;`;
+      const dimmed=!v||v==="NA"?"color:#aaa;":"";
+      return `<tr><td style="${rowStyle}${dimmed}">${n}</td><td style="${rowStyle}text-align:center;">${badge(v)}</td></tr>`;
+    }).join("");
+    notionHtml+=`<tr><td colspan="2" style="padding:6px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#666;background:#f5f4f0;border-bottom:1px solid #dedad2;">${comp}</td></tr>${rows}`;
+  });
+  const posRows=POSTURE.map((c,i)=>`<tr><td style="padding:5px 10px;font-size:12px;border-bottom:1px solid #eae7e0;">${c}</td><td style="padding:5px 10px;text-align:center;border-bottom:1px solid #eae7e0;">${badge(stu.pos[i])}</td></tr>`).join("");
+  const metRows=METHODO.map((c,i)=>`<tr><td style="padding:5px 10px;font-size:12px;border-bottom:1px solid #eae7e0;">${c}</td><td style="padding:5px 10px;text-align:center;border-bottom:1px solid #eae7e0;">${badge(stu.met[i])}</td></tr>`).join("");
+
+  document.getElementById("psheet").innerHTML=`
+  <div style="font-family:'Inter',sans-serif;color:#181715;max-width:700px;margin:0 auto;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #181715;padding-bottom:12px;margin-bottom:18px;">
+      <div>
+        <div style="font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#999;margin-bottom:4px;">BTS NDRC — Bloc 2 · Épreuve E5</div>
+        <div style="font-size:19px;font-weight:700;">Relation Client à Distance et Digitalisation</div>
+        <div style="font-size:13px;color:#666;margin-top:4px;">Bilan semestriel</div>
+      </div>
+      <div style="text-align:right;font-size:12.5px;color:#666;line-height:1.6;">${sess.a?"BTS NDRC "+sess.a+" année<br>":""} ${sess.s||""}</div>
+    </div>
+    <div style="background:#f9f8f5;border:1px solid #dedad2;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;gap:40px;align-items:center;">
+      <div><div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#999;margin-bottom:3px;">Apprenant·e</div><div style="font-size:18px;font-weight:700;">${prenom} ${nom}</div></div>
+      ${stu.moy?`<div><div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#999;margin-bottom:3px;">Moyenne RCAD</div><div style="font-size:26px;font-weight:700;">${stu.moy}<span style="font-size:13px;font-weight:400;color:#888;"> /20</span></div></div>`:""}
+    </div>
+    <div style="margin-bottom:14px;">
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#555;margin-bottom:7px;">Acquisition des compétences — notions évaluées</div>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #dedad2;">
+        <thead><tr style="background:#f0ede6;"><th style="text-align:left;padding:7px 10px;font-size:10.5px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.06em;">Notion de cours</th><th style="padding:7px 10px;font-size:10.5px;font-weight:600;color:#888;text-transform:uppercase;width:70px;">Niveau</th></tr></thead>
+        <tbody>${notionHtml}</tbody>
+      </table>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div><div style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#555;margin-bottom:7px;">Posture professionnelle</div><table style="width:100%;border-collapse:collapse;border:1px solid #dedad2;"><tbody>${posRows}</tbody></table></div>
+      <div><div style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#555;margin-bottom:7px;">Méthodologie examen E5</div><table style="width:100%;border-collapse:collapse;border:1px solid #dedad2;"><tbody>${metRows}</tbody></table></div>
+    </div>
+    <div style="background:#f9f8f5;border:1px solid #dedad2;border-radius:8px;padding:16px;">
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#555;margin-bottom:10px;">Commentaire pédagogique</div>
+      <div style="font-size:13px;line-height:1.85;white-space:pre-wrap;">${cmts.l||cmts.b}</div>
+    </div>
+    <div style="margin-top:18px;font-size:10px;color:#bbb;display:flex;justify-content:space-between;"><span>RCAD — BTS NDRC</span><span>${new Date().toLocaleDateString('fr-FR')}</span></div>
+  </div>`;
+
+  const old=document.title;
+  document.title=`${nom}_${prenom}_RCAD${sess.s?"_"+sess.s:""}`;
+  window.print();
+  setTimeout(()=>document.title=old,1500);
+}
+
+/* ══════════════ SUIVANT / RESET ══════════════ */
+function nextStu(){
+  ["f-nom","f-prenom","f-moy"].forEach(id=>document.getElementById(id).value="");
+  stu={nom:"",prenom:"",moy:"",notions:{},pos:{},met:{}};
+  cmts={b:"",l:""};
+  goTo(2);
+}
+function resetSess(){
+  if(document.getElementById("p1").classList.contains("on")) return;
+  if(!confirm("Démarrer une nouvelle session ? Les données seront effacées.")) return;
+  sess.a=null; sess.s=null; sess.ids.clear();
+  document.querySelectorAll("#s1-comp input").forEach(c=>c.checked=false);
+  document.querySelectorAll(".tg").forEach(b=>b.classList.remove("on"));
+  updCnt(); allOn=false;
+  stu={nom:"",prenom:"",moy:"",notions:{},pos:{},met:{}};
+  ["f-nom","f-prenom","f-moy"].forEach(id=>document.getElementById(id).value="");
+  cmts={b:"",l:""};
+  goTo(1);
+}
+
+/* ══════════════ INIT ══════════════ */
+buildS1();
+buildTable(POSTURE,"pos-body","pos","pos");
+buildTable(METHODO,"met-body","met","met");
+</script>
+</body>
+</html>
