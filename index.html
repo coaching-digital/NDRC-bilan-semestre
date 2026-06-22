@@ -6,8 +6,6 @@
   <title>Commentaires Bulletin — RCAD · BTS NDRC</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
     :root{
@@ -687,9 +685,34 @@ function cpyCmt(){
 }
 function regen(){goTo(3);setTimeout(gen,80);}
 
-/* ══════════════ PDF VECTORISÉ (jsPDF) ══════════════ */
-function expPDF(){
-  if(!window.jspdf){alert("La librairie PDF n'est pas encore chargée. Vérifiez votre connexion internet et réessayez.");return;}
+/* ══════════════ PDF VECTORISÉ (jsPDF — chargement différé) ══════════════ */
+function loadjsPDF(){
+  if(window.jspdf) return Promise.resolve();
+  return new Promise((ok,ko)=>{
+    const s1=document.createElement("script");
+    s1.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+    s1.onload=()=>{
+      const s2=document.createElement("script");
+      s2.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js";
+      s2.onload=ok; s2.onerror=()=>ko(new Error("autoTable"));
+      document.head.appendChild(s2);
+    };
+    s1.onerror=()=>ko(new Error("jsPDF"));
+    document.head.appendChild(s1);
+  });
+}
+async function expPDF(){
+  const btn=document.querySelector('[onclick="expPDF()"]');
+  const orig=btn?btn.textContent:"";
+  if(btn){btn.textContent="⏳ Chargement…";btn.disabled=true;}
+  try{ await loadjsPDF(); }
+  catch(e){
+    alert("Impossible de charger la librairie PDF.\n\nAssurez-vous que :\n• Le fichier est ouvert dans un navigateur (Firefox, Chrome, Safari…)\n• Vous avez une connexion internet active");
+    if(btn){btn.textContent=orig;btn.disabled=false;}
+    return;
+  }
+  if(btn){btn.textContent=orig;btn.disabled=false;}
+  if(!window.jspdf){alert("jsPDF introuvable après chargement.");return;}
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
 
