@@ -498,10 +498,11 @@ function buildEvComp(){
           ${MEN.map(m=>`<button class="nb" id="nb-${ci}-${ni}-${m}">${m}</button>`).join("")}
         </div>`;
       block.appendChild(row);
-      const key=`${ci}-${ni}`;
-      // NA button
-      document.getElementById(`nb-${ci}-${ni}-NA`).addEventListener("click",()=>pickN(ci,ni,"NA"));
-      MEN.forEach(m=>document.getElementById(`nb-${ci}-${ni}-${m}`).addEventListener("click",()=>pickN(ci,ni,m)));
+      // Use querySelector on row (not document.getElementById) — block not yet in DOM
+      row.querySelectorAll(".nb").forEach((btn,j)=>{
+        const val=j===0?"NA":MEN[j-1];
+        btn.addEventListener("click",()=>pickN(ci,ni,val));
+      });
     });
     c.appendChild(block);
   });
@@ -528,7 +529,7 @@ function buildTable(list,bodyId,prefix,key){
     const tr=document.createElement("tr");
     tr.innerHTML=`<td>${c}</td>`+MEN.map(m=>`<td style="padding:8px 5px;width:58px;"><button class="tbtn" id="${prefix}-${i}-${m}">${m}</button></td>`).join("");
     tb.appendChild(tr);
-    MEN.forEach(m=>document.getElementById(`${prefix}-${i}-${m}`).addEventListener("click",()=>pickT(key,i,m)));
+    MEN.forEach(m=>tr.querySelector(`[id="${prefix}-${i}-${m}"]`).addEventListener("click",()=>pickT(key,i,m)));
   });
 }
 function pickT(key,i,m){
