@@ -6,6 +6,8 @@
   <title>Commentaires Bulletin — RCAD · BTS NDRC</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
     :root{
@@ -139,7 +141,22 @@
     .tab{padding:11px 20px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:none;font-family:inherit;border-bottom:2px solid transparent;transition:all .13s;}
     .tab.on{color:var(--text);border-bottom-color:var(--accent);}
     .cb{padding:1.5rem;}
-    .ct2{font-size:14px;line-height:1.85;white-space:pre-wrap;min-height:80px;}
+    .ct2{font-size:14px;line-height:1.8;min-height:80px;}
+    .ct2 p{margin-bottom:12px;line-height:1.75;}
+    .ct2 p:last-child{margin-bottom:0;}
+    .ct2.bul{white-space:pre-wrap;} /* bulletin : texte brut */
+    .cmt-section{margin-bottom:16px;}
+    .cmt-sec-title{font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:7px;padding:5px 10px;border-radius:7px;}
+    .cmt-sec-title.vert{color:#3b6d11;background:#f0f7e6;}
+    .cmt-sec-title.orange{color:#854f0b;background:#fff3e0;}
+    .cmt-sec-title.bleu{color:#185fa5;background:#eef4fd;}
+    .cmt-ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;}
+    .cmt-ul li{display:flex;gap:8px;font-size:13.5px;line-height:1.6;}
+    .cmt-ul li::before{content:"•";flex-shrink:0;font-weight:700;margin-top:1px;}
+    .cmt-ul.vert li::before{color:#639922;}
+    .cmt-ul.orange li::before{color:#EF9F27;}
+    .cmt-ul.bleu li::before{color:#378ADD;}
+    .cmt-conclusion{font-size:13.5px;line-height:1.7;color:var(--muted);font-style:italic;padding-top:10px;border-top:1px solid var(--border-soft);margin-top:4px;}
     .ca{display:flex;gap:8px;margin-top:1rem;justify-content:flex-end;}
 
     /* PRINT */
@@ -596,110 +613,282 @@ ${posL.join("\n")||"Non renseignée"}
 MÉTHODOLOGIE D'EXAMEN :
 ${metL.join("\n")||"Non renseignée"}
 
-CONSIGNES IMPÉRATIVES :
-— Vouvoie l'apprenant·e dans LES DEUX textes (tu t'adresses directement à lui/elle)
-— N'utilise jamais la 3ème personne (pas de "il/elle a", pas de "Marie a fait")
-— Commence chaque texte en s'adressant à l'apprenant·e ("Vous avez...", "Ce semestre, vous...")
+CONSIGNES :
+— "court" : VOUVOIEMENT (vous). 3-4 phrases professionnelles pour le bulletin, mentionne la moyenne, synthétise les points forts et un axe de progression. Jamais de 3ème personne.
+— "long" : TUTOIEMENT (tu/te/ton). Document pédagogique structuré destiné à l'étudiant·e. Chaleureux, concret, actionnable. Jamais de 3ème personne. Chaque liste doit contenir au moins 2 éléments distincts et précis issus des évaluations.
 
-Génère UNIQUEMENT un JSON valide, sans markdown, sans backtick :
-{
-  "court": "[3-4 phrases pour le bulletin : direct, professionnel, mentionne la moyenne, synthétise les points forts et un axe de progression. Vouvoiement, 2ème personne.]",
-  "long": "[10-14 lignes pour l'apprenant·e : bienveillant, détaille chaque groupe de compétences évaluées, donne des conseils actionnables précis, termine par un encouragement motivant. Vouvoiement, 2ème personne.]"
-}`;
+Génère UNIQUEMENT ce JSON valide, sans markdown, sans backtick :
+{"court":"[bulletin vouvoiement]","long":{"intro":"[1-2 phrases d'introduction tutoiement, bilan global du semestre]","forts":["[point fort 1 précis]","[point fort 2 précis]"],"attention":["[point d'attention 1 précis avec contexte]","[point d'attention 2 précis]"],"axes":["[axe de progression 1 : conseil concret et actionnable]","[axe de progression 2 : conseil concret]"],"conclusion":"[1-2 phrases d'encouragement motivant tutoiement]"}}`;
 
   document.getElementById("gbtn").disabled=true;
   document.getElementById("loader").classList.add("on");
   try{
     const r=await fetch("https://api.anthropic.com/v1/messages",{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:prompt}]})
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1500,messages:[{role:"user",content:prompt}]})
     });
     const d=await r.json();
     const raw=d.content?.map(b=>b.text||"").join("")||"";
     const p=JSON.parse(raw.replace(/```json|```/g,"").trim());
-    cmts.b=p.court||""; cmts.l=p.long||"";
+    cmts.b=p.court||"";
+    cmts.l=p.long||null;
     showCmt("b");
     document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("on",i===0));
     goTo(4);
   }catch(e){alert("Erreur lors de la génération. Vérifiez votre connexion et réessayez.");}
   finally{document.getElementById("gbtn").disabled=false;document.getElementById("loader").classList.remove("on");}
 }
-function showCmt(t){aTab=t;document.getElementById("cdis").textContent=t==="b"?cmts.b:cmts.l;}
+function renderLong(l){
+  if(!l) return "";
+  if(typeof l==="string") return `<p>${l}</p>`;
+  let h="";
+  if(l.intro) h+=`<p style="margin-bottom:16px;font-size:13.5px;line-height:1.75;">${l.intro}</p>`;
+  if(l.forts?.length){
+    h+=`<div class="cmt-section"><div class="cmt-sec-title vert"><span>✦</span> Points forts</div>
+    <ul class="cmt-ul vert">${l.forts.map(f=>`<li><span>${f}</span></li>`).join("")}</ul></div>`;
+  }
+  if(l.attention?.length){
+    h+=`<div class="cmt-section"><div class="cmt-sec-title orange"><span>⚠</span> Points d'attention</div>
+    <ul class="cmt-ul orange">${l.attention.map(a=>`<li><span>${a}</span></li>`).join("")}</ul></div>`;
+  }
+  if(l.axes?.length){
+    h+=`<div class="cmt-section"><div class="cmt-sec-title bleu"><span>→</span> Axes de progression</div>
+    <ul class="cmt-ul bleu">${l.axes.map(a=>`<li><span>${a}</span></li>`).join("")}</ul></div>`;
+  }
+  if(l.conclusion) h+=`<div class="cmt-conclusion">${l.conclusion}</div>`;
+  return h;
+}
+function longToText(l){
+  if(!l) return "";
+  if(typeof l==="string") return l;
+  let t="";
+  if(l.intro) t+=l.intro+"\n\n";
+  if(l.forts?.length){t+="Points forts :\n";l.forts.forEach(f=>t+=`• ${f}\n`);t+="\n";}
+  if(l.attention?.length){t+="Points d'attention :\n";l.attention.forEach(a=>t+=`• ${a}\n`);t+="\n";}
+  if(l.axes?.length){t+="Axes de progression :\n";l.axes.forEach(a=>t+=`• ${a}\n`);t+="\n";}
+  if(l.conclusion) t+=l.conclusion;
+  return t.trim();
+}
+function showCmt(t){
+  aTab=t;
+  const el=document.getElementById("cdis");
+  if(t==="b"){
+    el.className="ct2 bul"; el.textContent=cmts.b;
+  } else {
+    el.className="ct2"; el.innerHTML=renderLong(cmts.l);
+  }
+}
 function swTab(t,btn){document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));btn.classList.add("on");showCmt(t);}
 function cpyCmt(){
-  navigator.clipboard.writeText(document.getElementById("cdis").textContent).then(()=>{
+  const text=aTab==="b"?cmts.b:longToText(cmts.l);
+  navigator.clipboard.writeText(text).then(()=>{
     const b=event.target,p=b.textContent; b.textContent="✓ Copié!"; setTimeout(()=>b.textContent=p,1800);
   });
 }
 function regen(){goTo(3);setTimeout(gen,80);}
 
-/* ══════════════ PDF ══════════════ */
-function badge(v){
-  const cols={TI:"#378ADD",I:"#639922",S:"#EF9F27",TS:"#D85A30",NA:"#94929A"};
-  const tc=v==="S"?"#412402":v==="NA"?"#fff":"#fff";
-  const lbl=v||"—"; const bg=cols[v]||"#e0ddd6"; const fc=v?tc:"#888";
-  return `<span style="background:${bg};color:${fc};padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;display:inline-block;">${lbl}</span>`;
-}
+/* ══════════════ PDF VECTORISÉ (jsPDF) ══════════════ */
 function expPDF(){
-  const nom=(stu.nom||"NOM").toUpperCase(), prenom=stu.prenom||"Prenom";
-  // Build notion rows
-  let notionHtml="";
+  if(!window.jspdf){alert("La librairie PDF n'est pas encore chargée. Vérifiez votre connexion internet et réessayez.");return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+
+  const nom=(stu.nom||"NOM").toUpperCase().trim();
+  const prenom=(stu.prenom||"Prenom").trim();
+  const sem=sess.s||"";
+
+  // Palette
+  const DARK=[24,23,21], DGRAY=[120,118,114], LGRAY=[190,188,184];
+  const LBGC=[249,248,245], BORDERC=[222,218,210], GBGC=[240,237,230];
+  const COL={TI:[55,138,221],I:[99,153,34],S:[239,159,39],TS:[216,90,48],NA:[148,146,154]};
+  const TC={TI:[255,255,255],I:[255,255,255],S:[65,36,2],TS:[255,255,255],NA:[255,255,255]};
+
+  const M=14, W=210, CW=W-2*M;
+  let y=14;
+
+  // ── EN-TÊTE ──
+  doc.setFillColor(...DARK);
+  doc.rect(M,y,CW,20,"F");
+  doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(160,158,153);
+  doc.text("BTS NDRC  -  Bloc 2  -  Epreuve E5",M+5,y+5);
+  doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+  doc.text("Relation Client a Distance et Digitalisation",M+5,y+12);
+  doc.setFontSize(8.5); doc.setFont("helvetica","normal"); doc.setTextColor(200,198,194);
+  doc.text("Bilan semestriel",M+5,y+18);
+  if(sess.a||sess.s){
+    const inf=[sess.a?"BTS NDRC "+sess.a+" annee":"",sess.s].filter(Boolean).join("   ");
+    doc.setFontSize(7.5); doc.setTextColor(155,153,150);
+    doc.text(inf,W-M-4,y+12,{align:"right"});
+  }
+  y+=24;
+
+  // ── FICHE APPRENANT ──
+  doc.setFillColor(...LBGC); doc.setDrawColor(...BORDERC); doc.setLineWidth(0.3);
+  doc.roundedRect(M,y,CW,18,2,2,"FD");
+  doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(...LGRAY);
+  doc.text("APPRENANT(E)",M+5,y+5.5);
+  doc.setFontSize(14); doc.setFont("helvetica","bold"); doc.setTextColor(...DARK);
+  doc.text(prenom+" "+nom,M+5,y+13.5);
+  if(stu.moy){
+    doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(...LGRAY);
+    doc.text("MOYENNE RCAD",W-M-40,y+5.5);
+    doc.setFontSize(17); doc.setFont("helvetica","bold"); doc.setTextColor(...DARK);
+    doc.text(stu.moy+" /20",W-M-40,y+14.5);
+  }
+  y+=23;
+
+  // ── SECTION COMPÉTENCES ──
+  doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...DGRAY);
+  doc.text("ACQUISITION DES COMPETENCES  -  NOTIONS EVALUEES",M,y); y+=3;
+
+  const compBody=[];
   FC.forEach(({c:comp,ns,ci})=>{
     if(!sess.ids.has(ci)) return;
-    let rows=ns.map((n,ni)=>{
+    // Titre de la compétence
+    compBody.push([{content:comp,colSpan:2,styles:{
+      fillColor:GBGC,fontStyle:"bold",fontSize:8.5,
+      textColor:[70,66,60],cellPadding:{top:3,bottom:3,left:5,right:4}
+    }}]);
+    ns.forEach((n,ni)=>{
       const v=stu.notions[`${ci}-${ni}`];
-      const rowStyle=`padding:5px 10px;font-size:11.5px;border-bottom:1px solid #eae7e0;`;
-      const dimmed=!v||v==="NA"?"color:#aaa;":"";
-      return `<tr><td style="${rowStyle}${dimmed}">${n}</td><td style="${rowStyle}text-align:center;">${badge(v)}</td></tr>`;
-    }).join("");
-    notionHtml+=`<tr><td colspan="2" style="padding:6px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#666;background:#f5f4f0;border-bottom:1px solid #dedad2;">${comp}</td></tr>${rows}`;
+      const isNA=!v||v==="NA";
+      const bg=v&&COL[v]?COL[v]:[225,222,218];
+      const tc=v&&TC[v]?TC[v]:[160,158,153];
+      compBody.push([
+        {content:n,styles:{fontSize:8.5,cellPadding:{top:2.5,bottom:2.5,left:8,right:3},textColor:isNA?[168,166,162]:DARK}},
+        {content:v||"-",styles:{fillColor:bg,textColor:tc,fontStyle:"bold",fontSize:8.5,halign:"center",cellPadding:{top:2.5,bottom:2.5,left:2,right:2}}}
+      ]);
+    });
   });
-  const posRows=POSTURE.map((c,i)=>`<tr><td style="padding:5px 10px;font-size:12px;border-bottom:1px solid #eae7e0;">${c}</td><td style="padding:5px 10px;text-align:center;border-bottom:1px solid #eae7e0;">${badge(stu.pos[i])}</td></tr>`).join("");
-  const metRows=METHODO.map((c,i)=>`<tr><td style="padding:5px 10px;font-size:12px;border-bottom:1px solid #eae7e0;">${c}</td><td style="padding:5px 10px;text-align:center;border-bottom:1px solid #eae7e0;">${badge(stu.met[i])}</td></tr>`).join("");
 
-  document.getElementById("psheet").innerHTML=`
-  <div style="font-family:'Inter',sans-serif;color:#181715;max-width:700px;margin:0 auto;">
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #181715;padding-bottom:12px;margin-bottom:18px;">
-      <div>
-        <div style="font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#999;margin-bottom:4px;">BTS NDRC — Bloc 2 · Épreuve E5</div>
-        <div style="font-size:19px;font-weight:700;">Relation Client à Distance et Digitalisation</div>
-        <div style="font-size:13px;color:#666;margin-top:4px;">Bilan semestriel</div>
-      </div>
-      <div style="text-align:right;font-size:12.5px;color:#666;line-height:1.6;">${sess.a?"BTS NDRC "+sess.a+" année<br>":""} ${sess.s||""}</div>
-    </div>
-    <div style="background:#f9f8f5;border:1px solid #dedad2;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;gap:40px;align-items:center;">
-      <div><div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#999;margin-bottom:3px;">Apprenant·e</div><div style="font-size:18px;font-weight:700;">${prenom} ${nom}</div></div>
-      ${stu.moy?`<div><div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#999;margin-bottom:3px;">Moyenne RCAD</div><div style="font-size:26px;font-weight:700;">${stu.moy}<span style="font-size:13px;font-weight:400;color:#888;"> /20</span></div></div>`:""}
-    </div>
-    <div style="margin-bottom:14px;">
-      <div style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#555;margin-bottom:7px;">Acquisition des compétences — notions évaluées</div>
-      <table style="width:100%;border-collapse:collapse;border:1px solid #dedad2;">
-        <thead><tr style="background:#f0ede6;"><th style="text-align:left;padding:7px 10px;font-size:10.5px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.06em;">Notion de cours</th><th style="padding:7px 10px;font-size:10.5px;font-weight:600;color:#888;text-transform:uppercase;width:70px;">Niveau</th></tr></thead>
-        <tbody>${notionHtml}</tbody>
-      </table>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-      <div><div style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#555;margin-bottom:7px;">Posture professionnelle</div><table style="width:100%;border-collapse:collapse;border:1px solid #dedad2;"><tbody>${posRows}</tbody></table></div>
-      <div><div style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#555;margin-bottom:7px;">Méthodologie examen E5</div><table style="width:100%;border-collapse:collapse;border:1px solid #dedad2;"><tbody>${metRows}</tbody></table></div>
-    </div>
-    <div style="background:#f9f8f5;border:1px solid #dedad2;border-radius:8px;padding:16px;">
-      <div style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#555;margin-bottom:10px;">Commentaire pédagogique</div>
-      <div style="font-size:13px;line-height:1.85;white-space:pre-wrap;">${cmts.l||cmts.b}</div>
-    </div>
-    <div style="margin-top:18px;font-size:10px;color:#bbb;display:flex;justify-content:space-between;"><span>RCAD — BTS NDRC</span><span>${new Date().toLocaleDateString('fr-FR')}</span></div>
-  </div>`;
+  doc.autoTable({
+    startY:y, body:compBody,
+    columnStyles:{0:{cellWidth:CW-19},1:{cellWidth:19}},
+    styles:{lineColor:BORDERC,lineWidth:0.15},
+    margin:{left:M,right:M}, theme:"plain"
+  });
+  y=doc.lastAutoTable.finalY+5;
 
-  const old=document.title;
-  document.title=`${nom}_${prenom}_RCAD${sess.s?"_"+sess.s:""}`;
-  window.print();
-  setTimeout(()=>document.title=old,1500);
+  // ── POSTURE + MÉTHODOLOGIE (2 colonnes) ──
+  const half=(CW-5)/2;
+  doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...DGRAY);
+  doc.text("POSTURE PROFESSIONNELLE",M,y);
+  doc.text("METHODOLOGIE EXAMEN E5",M+half+5,y);
+  y+=3;
+
+  const miniRow=(label,v)=>{
+    const bg=v&&COL[v]?COL[v]:[225,222,218];
+    const tc=v&&TC[v]?TC[v]:[168,166,162];
+    return[
+      {content:label,styles:{fontSize:8,cellPadding:{top:2,bottom:2,left:4,right:2},textColor:v?DARK:[168,166,162]}},
+      {content:v||"-",styles:{fillColor:bg,textColor:tc,fontStyle:"bold",fontSize:8,halign:"center",cellPadding:{top:2,bottom:2}}}
+    ];
+  };
+
+  const py=y;
+  doc.autoTable({
+    startY:py,
+    body:POSTURE.map((c,i)=>miniRow(c,stu.pos[i])),
+    columnStyles:{0:{cellWidth:half-17},1:{cellWidth:17}},
+    styles:{lineColor:BORDERC,lineWidth:0.15},
+    margin:{left:M,right:M+half+5}, theme:"plain"
+  });
+  const pyEnd=doc.lastAutoTable.finalY;
+
+  doc.autoTable({
+    startY:py,
+    body:METHODO.map((c,i)=>miniRow(c,stu.met[i])),
+    columnStyles:{0:{cellWidth:half-17},1:{cellWidth:17}},
+    styles:{lineColor:BORDERC,lineWidth:0.15},
+    margin:{left:M+half+5,right:M}, theme:"plain"
+  });
+  y=Math.max(pyEnd,doc.lastAutoTable.finalY)+6;
+
+  // ── COMMENTAIRE PÉDAGOGIQUE (long structuré uniquement) ──
+  const l=cmts.l;
+  if(l){
+    if(y>200){doc.addPage();y=14;}
+    doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...DGRAY);
+    doc.text("COMMENTAIRE PEDAGOGIQUE",M,y); y+=3;
+
+    const SEC=[
+      {key:"intro",   label:null,           bg:LBGC,         tc:DARK,  bullet:null},
+      {key:"forts",   label:"Points forts", bg:[240,247,232], tc:[59,109,17], bullet:"+ "},
+      {key:"attention",label:"Points d'attention",bg:[255,244,229],tc:[133,79,11],bullet:"! "},
+      {key:"axes",    label:"Axes de progression",bg:[232,241,253],tc:[24,95,165],bullet:"> "},
+      {key:"conclusion",label:null,          bg:[246,245,242], tc:[107,104,96],bullet:null}
+    ];
+
+    SEC.forEach(sec=>{
+      const val=l[sec.key];
+      if(!val||(Array.isArray(val)&&val.length===0)) return;
+      if(y>270){doc.addPage();y=14;}
+
+      if(sec.label){
+        // En-tête de section colorée
+        doc.autoTable({
+          startY:y,
+          body:[[{content:sec.label,styles:{fillColor:sec.bg,textColor:sec.tc,fontStyle:"bold",fontSize:9,cellPadding:{top:4,bottom:4,left:6,right:6}}}]],
+          columnStyles:{0:{cellWidth:CW}},
+          styles:{lineColor:BORDERC,lineWidth:0.15},
+          margin:{left:M,right:M},theme:"plain"
+        });
+        y=doc.lastAutoTable.finalY;
+        // Items avec bullet
+        const items=Array.isArray(val)?val:[val];
+        doc.autoTable({
+          startY:y,
+          body:items.map(it=>[{content:(sec.bullet||"")+it,styles:{
+            fillColor:[255,255,255],textColor:DARK,fontSize:10,
+            cellPadding:{top:3,bottom:3,left:10,right:6}
+          }}]),
+          columnStyles:{0:{cellWidth:CW}},
+          styles:{lineColor:BORDERC,lineWidth:0.15},
+          margin:{left:M,right:M},theme:"plain"
+        });
+        y=doc.lastAutoTable.finalY+2;
+      } else {
+        // Intro ou conclusion : paragraphe simple
+        const text=Array.isArray(val)?val.join(" "):val;
+        doc.autoTable({
+          startY:y,
+          body:[[{content:text,styles:{
+            fillColor:sec.bg,textColor:sec.tc,fontSize:10,
+            cellPadding:{top:6,bottom:6,left:7,right:7},fontStyle:sec.key==="conclusion"?"italic":"normal"
+          }}]],
+          columnStyles:{0:{cellWidth:CW}},
+          styles:{lineColor:BORDERC,lineWidth:0.15},
+          margin:{left:M,right:M},theme:"plain"
+        });
+        y=doc.lastAutoTable.finalY+3;
+      }
+    });
+  }
+
+  // ── PIED DE PAGE (toutes les pages) ──
+  const totalPages=doc.internal.getNumberOfPages();
+  const pH=doc.internal.pageSize.height;
+  for(let p=1;p<=totalPages;p++){
+    doc.setPage(p);
+    doc.setFontSize(7.5); doc.setFont("helvetica","normal"); doc.setTextColor(...LGRAY);
+    doc.text("Relation Client a Distance et Digitalisation  -  BTS NDRC",M,pH-7);
+    doc.text(new Date().toLocaleDateString("fr-FR"),W-M,pH-7,{align:"right"});
+    if(totalPages>1){
+      doc.text(`${p} / ${totalPages}`,W/2,pH-7,{align:"center"});
+    }
+  }
+
+  // ── NOM DU FICHIER ──
+  const clean=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9]/g,"_");
+  const fname=`${clean(nom)}_${clean(prenom)}_evaluation_RCDD${sem?"_"+sem:""}`;
+  doc.save(fname+".pdf");
 }
 
 /* ══════════════ SUIVANT / RESET ══════════════ */
 function nextStu(){
   ["f-nom","f-prenom","f-moy"].forEach(id=>document.getElementById(id).value="");
   stu={nom:"",prenom:"",moy:"",notions:{},pos:{},met:{}};
-  cmts={b:"",l:""};
+  cmts={b:"",l:null};
   goTo(2);
 }
 function resetSess(){
@@ -711,7 +900,7 @@ function resetSess(){
   updCnt(); allOn=false;
   stu={nom:"",prenom:"",moy:"",notions:{},pos:{},met:{}};
   ["f-nom","f-prenom","f-moy"].forEach(id=>document.getElementById(id).value="");
-  cmts={b:"",l:""};
+  cmts={b:"",l:null};
   goTo(1);
 }
 
